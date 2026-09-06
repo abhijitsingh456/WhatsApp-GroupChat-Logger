@@ -64,7 +64,7 @@ async function logMessageToCSV(rowObject){
             const rawValue = rowObject[headerName] ?? '';
             //string sanitization
             const stringValue = String(rawValue).replace(/"/g, '""""');
-            return /[",\n\r]/.stringValue ? `"${stringValue}"` : stringValue;
+            return `"${stringValue}"`;
 
         });
 

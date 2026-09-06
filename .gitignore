@@ -1,0 +1,13 @@
+node_modules/
+.env
+auth_info/
+logs/
+downloads/
+group_chats/
+.DS_Store/
+.DS_Store
+# Vim/Neovim temporary swap and undo files
+*.un~
+*.swp
+*.swo
+.netrwhist

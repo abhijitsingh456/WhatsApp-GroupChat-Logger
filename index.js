@@ -2,7 +2,6 @@ import { makeWASocket, useMultiFileAuthState, fetchLatestBaileysVersion, Disconn
 import { Boom } from '@hapi/boom'
 
 import pino from 'pino';
-import dotenv from 'dotenv'
 import qrcode from 'qrcode-terminal';
 import fs from 'fs';
 import path from 'path';
@@ -79,11 +78,37 @@ async function logMessageToCSV(rowObject){
 
 function extentionFromMimeType(mimeType){
     const knownMimeTypes = {
-	'image/jpeg':'jpg',
-	'image/png':'png',
-	'image/webp':'webp',
-	'image/gif':'gif'
+        'image/jpeg':'jpg',
+        'image/png':'png',
+        'image/webp':'webp',
+        'image/gif':'gif',
+
+        // Documents
+        'application/pdf': 'pdf',
+        'text/plain': 'txt',
+        'text/csv': 'csv',
+        'application/msword': 'doc',
+        'application/vnd.openxmlformats-officedocument.wordprocessingml.document': 'docx',
+        'application/vnd.ms-excel': 'xls',
+        'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet': 'xlsx',
+        'application/vnd.ms-powerpoint': 'ppt',
+        'application/vnd.openxmlformats-officedocument.presentationml.presentation': 'pptx',
+
+        // Audio
+        'audio/aac': 'aac',
+        'audio/mp4': 'm4a',
+        'audio/amr': 'amr',
+        'audio/mpeg': 'mp3',
+        'audio/ogg': 'ogg',
+        'audio/wav': 'wav',
+
+        // Video
+        'video/mp4': 'mp4',
+        'video/3gpp': '3gp'
 	};
+
+
+
 	if(!mimeType){ return 'bin'; }
 	return knownMimeTypes[mimeType] || mimeType.split('/')[1]?.split(';')[0] || 'bin';
 
@@ -97,7 +122,7 @@ async function start(){
     const sock = makeWASocket({
         version,
         auth: state,
-        logger: pino({ level: 'warn' })
+        logger: pino({ level: 'fatal' })
     });
 
     sock.ev.on('creds.update', async() => {
@@ -147,7 +172,7 @@ async function start(){
 
             const textContent = extractText(msg.message);
             const messageType = Object.keys(msg.message)[0];
-            if(messageType === 'imageMessage'){
+            if(messageType === 'imageMessage' || messageType === 'documentMessage'){
                 if(!fs.existsSync(MEDIA_DIR)){
                     fs.mkdirSync(MEDIA_DIR, { recursive: true });
                 }
@@ -157,13 +182,18 @@ async function start(){
                                 'buffer',
                                 {},
                                 { logger: pino({level: 'warn' }), reuploadRequest: sock.updateMediaMessage });
-                    const ext = extentionFromMimeType(msg.message.imageMessage.mimetype);
+                    let ext = '';
+                    if(messageType==='imageMessage'){
+                        ext = extentionFromMimeType(msg.message.imageMessage.mimetype);
+                    }else{
+                        ext = extentionFromMimeType(msg.message.documentMessage.mimetype);
+                    }
                     const fileName = `${msg.key.id}.${ext}`;
                     const mediaPath = path.join(MEDIA_DIR, fileName);
                     fs.writeFileSync(mediaPath, buffer);
-                    console.log('Saved image to ', mediaPath);
+                    console.log('Saved document/image to ', mediaPath);
                  }catch (err){
-                    console.error('Failed to download image for ', msg.key.id, err);
+                    console.error('Failed to download document/image for ', msg.key.id, err);
                  } 
                 
             }
